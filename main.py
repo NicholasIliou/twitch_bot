@@ -6,12 +6,14 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import asyncio
+from load_emotes import EmoteChecker
 
 APP_ID = os.getenv('APP_ID') # APP_ID should be stored as string
 APP_SECRET = os.getenv('APP_SECRET')
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
-TARGET_CHANNEL =  os.getenv('TARGET_CHANNEL')
-
+TARGET_CHANNEL = os.getenv('TARGET_CHANNEL')
+USERNAME = os.getenv('USERNAME')
+checker = EmoteChecker(TARGET_CHANNEL)
 
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
@@ -41,6 +43,9 @@ async def test_command(cmd: ChatCommand):
     else:
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
+async def shadow(msg: ChatMessage):
+    if msg.user.name != USERNAME and checker.is_valid_emote(msg.text):
+        await msg.reply(f"{msg.text}")
 
 # this is where we set up the bot
 async def run():
@@ -56,14 +61,14 @@ async def run():
     chat.set_prefix("!")
 
     # register the handlers for the events you want
-
+    chat.register_event(ChatEvent.MESSAGE, shadow)
     # listen to when the bot is done starting up and ready to join channels
     chat.register_event(ChatEvent.READY, on_ready)
     # listen to chat messages
     chat.register_event(ChatEvent.MESSAGE, on_message)
     # listen to channel subscriptions
-    chat.register_event(ChatEvent.SUB, on_sub)
-    # there are more events, you can view them all in this documentation
+    # chat.register_event(ChatEvent.SUB, on_sub)
+    # there are more events, you can view them all in this documentation: https://pytwitchapi.dev/en/stable/modules/twitchAPI.twitch.html
 
     # you can directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
