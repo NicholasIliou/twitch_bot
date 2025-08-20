@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 import asyncio
 from load_emotes import EmoteChecker
+import random
+
 
 APP_ID = os.getenv('APP_ID') # APP_ID should be stored as string
 APP_SECRET = os.getenv('APP_SECRET')
@@ -14,6 +16,16 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 TARGET_CHANNEL = os.getenv('TARGET_CHANNEL')
 USERNAME = os.getenv('USERNAME')
 checker = EmoteChecker(TARGET_CHANNEL)
+
+# Monkey Patch ChatMessage to include Message function
+async def new_send_message(self, text: str):
+    """Send a normal message to the chat room"""
+    bucket = self.chat._get_message_bucket(self._parsed['command']['channel'][1:])
+    await bucket.put()
+    await self.chat.send_raw_irc_message(f'PRIVMSG #{self.room.name} :{text}')
+
+if not hasattr(ChatMessage, 'send_message'):
+    ChatMessage.send_message = new_send_message
 
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
@@ -26,7 +38,7 @@ async def on_ready(ready_event: EventData):
 
 # this will be called whenever a message in a channel was send by either the bot OR another user
 async def on_message(msg: ChatMessage):
-    print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+    print(f'{msg.user.name}: {msg.text}')
 
 
 # this will be called whenever someone subscribes to a channel
@@ -44,15 +56,20 @@ async def test_command(cmd: ChatCommand):
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
 async def shadow(msg: ChatMessage):
+    rnd = random.random()
     if msg.user.name != USERNAME and checker.is_valid_emote(msg.text):
-        await msg.reply(f"{msg.text}")
+        if rnd < (0.45):
+            await asyncio.sleep(3*rnd)
+            #await msg.reply(f"{msg.text}")
+            await msg.send_message(msg.text)
+            print(f"(!) Shadowed: {msg.user.name}: {msg.text}")
 
 # this is where we set up the bot
 async def run():
     # set up twitch api instance and add user authentication with some scopes
     twitch = await Twitch(APP_ID, APP_SECRET)
     auth = UserAuthenticator(twitch, USER_SCOPE)
-    token, refresh_token = await auth.authenticate()
+    token, refresh_token = await auth.authenticate(use_browser=False)
     await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
 
     # create chat instance
