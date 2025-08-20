@@ -8,6 +8,7 @@ load_dotenv()
 import asyncio
 from load_emotes import EmoteChecker
 import random
+from authenticate import custom_authenticate
 
 
 APP_ID = os.getenv('APP_ID') # APP_ID should be stored as string
@@ -26,6 +27,9 @@ async def new_send_message(self, text: str):
 
 if not hasattr(ChatMessage, 'send_message'):
     ChatMessage.send_message = new_send_message
+
+# Monkey patch the `authenticate` method
+UserAuthenticator.authenticate = custom_authenticate
 
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
@@ -69,7 +73,7 @@ async def run():
     # set up twitch api instance and add user authentication with some scopes
     twitch = await Twitch(APP_ID, APP_SECRET)
     auth = UserAuthenticator(twitch, USER_SCOPE)
-    token, refresh_token = await auth.authenticate(use_browser=False)
+    token, refresh_token = await auth.authenticate()
     await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
 
     # create chat instance
