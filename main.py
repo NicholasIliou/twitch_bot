@@ -68,6 +68,13 @@ async def shadow(msg: ChatMessage):
             await msg.send_message(msg.text)
             print(f"(!) Shadowed: {msg.user.name}: {msg.text}")
 
+async def undead(chat: Chat, channel: str):
+    """Chat dead? Make it undead by sending emotes in semi-random intervals."""
+    while True:
+        rnd_time = random.randint(5, 30)
+        await asyncio.sleep(rnd_time * 60)
+        await chat.send_message(channel, checker.random_emote)
+
 # this is where we set up the bot
 async def run():
     # set up twitch api instance and add user authentication with some scopes
@@ -94,6 +101,8 @@ async def run():
     # you can directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
 
+    # Start the undead periodic task in the background
+    asyncio.create_task(undead(chat, TARGET_CHANNEL))
 
     # we are done with our setup, lets start this bot up!
     chat.start()

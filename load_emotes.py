@@ -1,4 +1,5 @@
 import requests
+import random
 
 class EmoteChecker:
     """
@@ -37,6 +38,10 @@ class EmoteChecker:
     def is_valid_emote(self, emote_name: str) -> bool:
         return emote_name in self.emote_list
     
+    def random_emote(self):
+        """returns a random emote from the selected emote list"""
+        return self.emote_list[random.randint(0,len(self.emote_list))]
+
     def __str__(self):
         return f"Emote list for channel '{channel}':, {checker.emote_list}"
 
