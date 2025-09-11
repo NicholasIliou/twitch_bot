@@ -17,6 +17,7 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 TARGET_CHANNEL = os.getenv('TARGET_CHANNEL')
 USERNAME = os.getenv('USERNAME')
 checker = EmoteChecker(TARGET_CHANNEL)
+current_users = set()
 
 # Monkey Patch ChatMessage to include Message function
 async def new_send_message(self, text: str):
@@ -38,6 +39,9 @@ async def on_ready(ready_event: EventData):
     # or even better pass a list of channels as the argument
     await ready_event.chat.join_room(TARGET_CHANNEL)
     # you can do other bot initialization things in here
+
+    # Start the undead periodic task in the background
+    asyncio.create_task(undead(ready_event.chat, TARGET_CHANNEL))
 
 
 # this will be called whenever a message in a channel was send by either the bot OR another user
@@ -63,17 +67,32 @@ async def shadow(msg: ChatMessage):
     rnd = random.random()
     if msg.user.name != USERNAME and checker.is_valid_emote(msg.text):
         if rnd < (0.45):
-            await asyncio.sleep(3*rnd)
+            await asyncio.sleep(10*rnd)
             #await msg.reply(f"{msg.text}")
             await msg.send_message(msg.text)
             print(f"(!) Shadowed: {msg.user.name}: {msg.text}")
 
 async def undead(chat: Chat, channel: str):
-    """Chat dead? Make it undead by sending emotes in semi-random intervals."""
     while True:
-        rnd_time = random.randint(5, 30)
-        await asyncio.sleep(rnd_time * 60)
-        await chat.send_message(channel, checker.random_emote)
+        print("undead function was called")
+        try:
+            rnd_time = random.randint(5, 10)
+            await asyncio.sleep(rnd_time*60)
+            await chat.send_message(channel, checker.random_emote())
+        except Exception as e:
+            print(f"Undead error: {e}")
+
+async def on_join(event: EventData):
+    user = getattr(event, "user", None)
+    if user:
+        current_users.add(user.name)
+    print(f'+1 ({len(current_users)} users)')
+
+async def on_leave(event: EventData):
+    user = getattr(event, "user", None)
+    if user and user.name in current_users:
+        current_users.remove(user.name)
+    print(f'-1 ({len(current_users)} users)')
 
 # this is where we set up the bot
 async def run():
@@ -88,12 +107,14 @@ async def run():
 
     chat.set_prefix("!")
 
-    # register the handlers for the events you want
-    chat.register_event(ChatEvent.MESSAGE, shadow)
     # listen to when the bot is done starting up and ready to join channels
     chat.register_event(ChatEvent.READY, on_ready)
+    # register the handlers for the events you want
+    chat.register_event(ChatEvent.MESSAGE, shadow)
     # listen to chat messages
     chat.register_event(ChatEvent.MESSAGE, on_message)
+    chat.register_event(ChatEvent.JOINED, on_join)
+    chat.register_event(ChatEvent.USER_LEFT, on_leave)
     # listen to channel subscriptions
     # chat.register_event(ChatEvent.SUB, on_sub)
     # there are more events, you can view them all in this documentation: https://pytwitchapi.dev/en/stable/modules/twitchAPI.twitch.html
@@ -101,20 +122,17 @@ async def run():
     # you can directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
 
-    # Start the undead periodic task in the background
-    asyncio.create_task(undead(chat, TARGET_CHANNEL))
-
     # we are done with our setup, lets start this bot up!
     chat.start()
-
-    # lets run till we press enter in the console
     try:
-        input('press ENTER to stop\\n')
+        await asyncio.Event().wait()  # Block indefinitely (until Ctrl+C or stop)
+    except KeyboardInterrupt:
+        pass
     finally:
-        # now we can close the chat bot and the twitch api client
         chat.stop()
         await twitch.close()
 
 
 # lets run our setup
-asyncio.run(run())
+if __name__ == "__main__":
+    asyncio.run(run())
