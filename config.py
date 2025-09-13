@@ -30,3 +30,24 @@ def get_shadow_chance():
 		return 0.45
 
 SHADOW_CHANCE = get_shadow_chance()
+
+# Delayed reply configuration
+def get_delayed_reply_base():
+	try:
+		return float(os.getenv('DELAYED_REPLY_BASE', '0.2'))
+	except ValueError:
+		return 0.2
+
+def get_delayed_reply_min():
+	try:
+		return float(os.getenv('DELAYED_REPLY_MIN', '0.8'))
+	except ValueError:
+		return 0.8
+
+def get_delayed_reply_max():
+	try:
+		return float(os.getenv('DELAYED_REPLY_MAX', '1.2'))
+	except ValueError:
+		return 1.2
+
+DELAY_TWEAK = float(os.getenv('DELAY_TWEAK', '0.2'))  # 0.2 means ±20% variance
