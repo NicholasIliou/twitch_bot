@@ -15,6 +15,7 @@ from config import TARGET_CHANNEL, USERNAME, checker, attendance, current_users,
 from toggles import UNDEAD
 from authenticate import custom_authenticate
 
+# -----------------------------------------------------------------------------------------------------
 # Monkey Patch ChatMessage to include Message function
 async def new_send_message(self, text: str):
     bucket = self.chat._get_message_bucket(self._parsed['command']['channel'][1:])
@@ -25,7 +26,10 @@ from twitchAPI.chat import ChatMessage
 if not hasattr(ChatMessage, 'send_message'):
     ChatMessage.send_message = new_send_message
 
+# Monkey Patch Authentication
 UserAuthenticator.authenticate = custom_authenticate
+# -----------------------------------------------------------------------------------------------------
+
 
 async def on_ready(ready_event: EventData):
     print('Bot is ready for work, joining channels')
