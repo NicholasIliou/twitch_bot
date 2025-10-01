@@ -20,21 +20,25 @@ Custom non-disruptive Twitch Bot that aims to add fun / helpful features in a le
 2. Create a virtual environment and activate it:
    ```sh
    python -m venv venv
-   # On Windows:
+   ```
+   On Windows:
+   ```sh
    venv\Scripts\activate
-   # On Linux/macOS:
+   ```
+   On Linux/macOS:
+   ```sh
    source venv/bin/activate
    ```
-3. Install dependencies:
+4. Install dependencies:
    ```sh
    pip install -r requirements.txt
    ```
-4. Copy [.env.example](.env.example) to `.env` and fill in your Twitch credentials:
+5. Copy [.env.example](.env.example) to `.env` and fill in your Twitch credentials:
    ```sh
    cp .env.example .env
    # or manually create .env
    ```
-5. Run the bot:
+6. Run the bot:
    ```sh
    python main.py
    ```
